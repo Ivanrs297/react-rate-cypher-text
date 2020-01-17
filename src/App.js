@@ -47,7 +47,7 @@ class App extends Component {
     let R = Math.log2(alphabet);
     console.log("Rango absoluto: ", R)
 
-    let r = entropy/text.length
+    let r = entropy/frequency.length
     console.log("Rango real: ", r)
 
     let D = R - r
