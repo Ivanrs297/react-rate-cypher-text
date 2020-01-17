@@ -126,10 +126,11 @@ class App extends Component {
               <Form onSubmit={this.handleSubmit}>
 
                 <Form.Group controlId="exampleForm.ControlTextarea1">
-                  <Form.Label><span style={{fontWeight: 700}}>From file</span></Form.Label>
+                  <Form.Label><span style={{fontWeight: 700}}>From file *.txt</span></Form.Label>
                   <br/>
                   <input 
                     type="file"
+                    accept="text/plain"
                     onChange={(e) => this.showFile(e)}
                     ref={this.state.fileInput}
                   />
@@ -148,7 +149,7 @@ class App extends Component {
 
                 <Form.Group controlId="exampleForm.ControlTextarea1">
                   <Form.Label><span style={{fontWeight: 700}}>Text</span></Form.Label>
-                  <Form.Control placeholder="Insert your text..." as="textarea" rows="3" value={this.state.text} onChange={this.handleChange}/>
+                  <Form.Control placeholder="Insert your text..." as="textarea" rows="10" value={this.state.text} onChange={this.handleChange}/>
                 </Form.Group>
 
                 <ButtonToolbar>
