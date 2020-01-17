@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import { getCodesFromText, encode, decode, getEntropyOfText, getFrequency } from './huffmanjs.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { ListGroup, Toast, ButtonToolbar, Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { Spinner, FormControl, InputGroup, ListGroup, Toast, ButtonToolbar, Container, Row, Col, Form, Button } from 'react-bootstrap';
 
 
 class App extends Component {
@@ -16,10 +16,14 @@ class App extends Component {
       entropy: null,
       informationAmount: null,
       toast: false,
+      loading: false,
+      fileInput: React.createRef()
     };
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    // this.fileInput = React.createRef();
+
   }
 
   handleChange(event) {
@@ -30,10 +34,23 @@ class App extends Component {
     event.preventDefault();
     this.setState({toast: true})
     this.runHuffman(this.state.text)
-      
-    
   }
 
+  showFile = async (e) => {
+    e.preventDefault()
+    this.setState({loading: true})
+    const reader = new FileReader()
+    reader.onload = async (e) => { 
+      const text = (e.target.result)
+      console.log(text)
+      this.runHuffman(text)
+      this.setState({text})
+      this.setState({loading: false})
+
+    };
+    reader.readAsText(e.target.files[0])
+    
+  }
 
   runHuffman(text) {
     // let text = "Ivan "
@@ -109,6 +126,27 @@ class App extends Component {
               <Form onSubmit={this.handleSubmit}>
 
                 <Form.Group controlId="exampleForm.ControlTextarea1">
+                  <Form.Label><span style={{fontWeight: 700}}>From file</span></Form.Label>
+                  <br/>
+                  <input 
+                    type="file"
+                    onChange={(e) => this.showFile(e)}
+                    ref={this.state.fileInput}
+                  />
+                </Form.Group>
+                <br/>
+
+                {this.state.loading &&
+                  <div style={{textAlign: "center"}}>
+                    <Spinner animation="border" role="status">
+                      <span className="sr-only">Loading...</span>
+                    </Spinner>
+                  </div>
+                }
+
+                
+
+                <Form.Group controlId="exampleForm.ControlTextarea1">
                   <Form.Label><span style={{fontWeight: 700}}>Text</span></Form.Label>
                   <Form.Control placeholder="Insert your text..." as="textarea" rows="3" value={this.state.text} onChange={this.handleChange}/>
                 </Form.Group>
@@ -122,7 +160,7 @@ class App extends Component {
                     Clear
                   </Button>
 
-                  <Button variant="danger" type="button" onClick={() => this.setState({text: "", R: "", r: "", D: "", entropy: "", informationAmount: ""})}>
+                  <Button variant="danger" type="button" onClick={() => { this.setState({text: "", R: "", r: "", D: "", entropy: "", informationAmount: ""}) }}>
                     Reset
                   </Button>
                 </ButtonToolbar>
@@ -140,11 +178,12 @@ class App extends Component {
               <ListGroup.Item><span style={{fontWeight: 700}}>Entropy (H):</span> {this.state.entropy}</ListGroup.Item>
               <ListGroup.Item><span style={{fontWeight: 700}}>Information Amount (C):</span> {this._renderInfoAmount(this.state.informationAmount)}</ListGroup.Item>
             </ListGroup>
+            
             </Col>
 
           </Row>
 
-          <Row>
+          <Row style={{position: "absolute", bottom: 20, left: "5%" }}>
             <Col><p style={{color: "gray"}}>Iván Reyes A. - CINVESTAV GDL 2020</p></Col>
           </Row>
 
