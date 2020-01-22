@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import { getCodesFromText, encode, decode, getEntropyOfText, getFrequency } from './huffmanjs.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Spinner, FormControl, InputGroup, ListGroup, Toast, ButtonToolbar, Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { Accordion, Card, Alert, Spinner, FormControl, InputGroup, ListGroup, Toast, ButtonToolbar, Container, Row, Col, Form, Button } from 'react-bootstrap';
 
 
 class App extends Component {
@@ -13,11 +13,15 @@ class App extends Component {
       R: null, 
       r: null,
       D: null,
-      entropy: null,
+      entropyUncoded: null,
+      entropyHuffman: null,
       informationAmount: null,
       toast: false,
       loading: false,
-      fileInput: React.createRef()
+      codedText: '',
+      fileInput: React.createRef(),
+      error: false,
+      huffmanCodes: null
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -33,7 +37,18 @@ class App extends Component {
   handleSubmit(event) {
     event.preventDefault();
     this.setState({toast: true})
-    this.runHuffman(this.state.text)
+    try {
+      this.runHuffman(this.state.text)
+      this.setState({success: true})
+      setTimeout(() => { 
+        this.setState({success: false})
+      }, 5000);
+    } catch {
+      this.setState({error: true})
+      setTimeout(() => { 
+        this.setState({error: false})
+      }, 5000);
+    }
   }
 
   showFile = async (e) => {
@@ -52,26 +67,36 @@ class App extends Component {
     
   }
 
+  getEntropy(text, huffmanCodes, frequency) {
+    const n = text.length
+    let entropy = 0
+
+    frequency.forEach((char) => {
+      const probability = char[1]/n
+      const value = probability/huffmanCodes.get(char[0]).length
+      entropy += value
+      console.log("VALUE: ", char[0], probability, value)
+    })
+
+    return entropy
+  }
+
   runHuffman(text) {
-    // let text = "Ivan "
-    console.log("TEXT: ", text)
-    
-    let entropy = getEntropyOfText(text)
+
+    let huffmanCodes = getCodesFromText(text)
+    let codedText = encode(text, huffmanCodes)
     let frequency = getFrequency(text)
     
+    let entropyUncoded = getEntropyOfText(codedText)
+    let entropyHuffman = this.getEntropy(text, huffmanCodes, frequency)
+    console.log("Entropy 1: ", entropyUncoded)
+    console.log("Entropy 2: ", entropyHuffman)
+
+    
     const alphabet = frequency.length
-    console.log("alphabet: ", Math.log2(alphabet))
     let R = Math.log2(alphabet);
-    console.log("Rango absoluto: ", R)
-
-    let r = entropy/frequency.length
-    console.log("Rango real: ", r)
-
+    let r = entropyHuffman/frequency.length
     let D = R - r
-    console.log("Redundancia: ", D)
-
-    console.log("Entropia: ", entropy)
-
     const n = text.length
     let informationAmount = [...frequency]
     let probability = null
@@ -82,14 +107,16 @@ class App extends Component {
     }
 
     this.setState({
-      entropy,
+      entropyUncoded,
+      entropyHuffman,
       R,
       r,
       D,
-      informationAmount
+      informationAmount,
+      codedText: codedText.join(''),
+      huffmanCodes
     })
     
-    console.log("informationAmount: ", informationAmount)
   }
 
   _renderInfoAmount(data) {
@@ -97,13 +124,26 @@ class App extends Component {
       return (
         data.map((value) => {
           return (
-            <div key={value[0]}>
-              <p> <span style={{fontWeight: 700}}>"{value[0]}":</span>  {value[2]}</p>
-            </div>
+            <ListGroup.Item key={value[0]}><span style={{fontWeight: 700}}>"{value[0]}":</span>  {value[2]}</ListGroup.Item>
+
           )
         })
         
       )
+    } else {
+      return []
+    }
+  }
+
+  _renderCodeList() {
+    let codes = []
+    if (this.state.huffmanCodes) {
+      this.state.huffmanCodes.forEach((code, char) => {
+          codes.push (
+            <ListGroup.Item key={code}> <span style={{fontWeight: 700}}>{char}:</span> {code}</ListGroup.Item>
+          )
+        })
+        return codes
     } else {
       return []
     }
@@ -122,6 +162,11 @@ class App extends Component {
           </Row>
           <Row>
             <Col>
+
+              
+
+              
+
 
               <Form onSubmit={this.handleSubmit}>
 
@@ -152,16 +197,16 @@ class App extends Component {
                   <Form.Control placeholder="Insert your text..." as="textarea" rows="10" value={this.state.text} onChange={this.handleChange}/>
                 </Form.Group>
 
-                <ButtonToolbar>
+                <ButtonToolbar style={{marginBottom: 20}}>
                   <Button variant="success" type="submit" style={{marginRight: 10}} disabled={!this.state.text}>
                     Submit
                   </Button>
 
-                  <Button variant="warning" type="button" style={{marginRight: 10}} onClick={() => this.setState({text: ""})}>
+                  <Button variant="warning" type="button" style={{marginRight: 10}} onClick={() => this.setState({text: "", codedText: ""})}>
                     Clear
                   </Button>
 
-                  <Button variant="danger" type="button" onClick={() => { this.setState({text: "", R: "", r: "", D: "", entropy: "", informationAmount: ""}) }}>
+                  <Button variant="danger" type="button" onClick={() => { this.setState({codedText: "", text: "", R: "", r: "", D: "", entropy: "", informationAmount: ""}) }}>
                     Reset
                   </Button>
                 </ButtonToolbar>
@@ -169,24 +214,100 @@ class App extends Component {
 
               </Form>
 
+              {this.state.error &&
+                <Alert onClose={() => this.setState({error: false})} dismissible  variant={'danger'}>
+                  Error, you must insert 2 different characters at least.
+                </Alert>
+              }
+
             </Col>
             <Col>
 
-            <ListGroup>
-              <ListGroup.Item ><span style={{fontWeight: 700}}>Absolute Rate (R):</span> {this.state.R}</ListGroup.Item>
-              <ListGroup.Item><span style={{fontWeight: 700}}>Real Rate (r):</span> {this.state.r}</ListGroup.Item>
-              <ListGroup.Item><span style={{fontWeight: 700}}>Redundancy (D):</span> {this.state.D}</ListGroup.Item>
-              <ListGroup.Item><span style={{fontWeight: 700}}>Entropy (H):</span> {this.state.entropy}</ListGroup.Item>
-              <ListGroup.Item><span style={{fontWeight: 700}}>Information Amount (C):</span> {this._renderInfoAmount(this.state.informationAmount)}</ListGroup.Item>
-            </ListGroup>
+              <Accordion style={{marginBottom: 20}}>
+              <Card style={{maxWidth: 540}}>
+                <Accordion.Toggle as={Card.Header} eventKey="000"><span style={{fontWeight: 700}}>Huffman Code:</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="000">
+                  <Card.Body>
+                    <Card.Text >
+                      <p>{this.state.codedText}</p>
+                    </Card.Text>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card>
+                <Accordion.Toggle as={Card.Header} eventKey="00"><span style={{fontWeight: 700}}>Huffman Codes List:</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="00">
+                  <Card.Body>
+                    <ListGroup>
+                      {this._renderCodeList(this.state.huffmanCodes)}
+                    </ListGroup>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card>
+                <Accordion.Toggle as={Card.Header} eventKey="0"><span style={{fontWeight: 700}}>Entropy (H):</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="0">
+                  <Card.Body>{this.state.entropyUncoded}</Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card>
+                <Accordion.Toggle as={Card.Header} eventKey="1"><span style={{fontWeight: 700}}>Entropy w/Huffman (H):</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="1">
+                  <Card.Body>{this.state.entropyHuffman}</Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card>
+                <Accordion.Toggle as={Card.Header} eventKey="2"><span style={{fontWeight: 700}}>Absolute Rate (R):</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="2">
+                  <Card.Body>{this.state.R}</Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card>
+                <Accordion.Toggle as={Card.Header} eventKey="3"><span style={{fontWeight: 700}}>Real Rate (r):</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="3">
+                  <Card.Body>{this.state.r}</Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+              <Card>
+                <Accordion.Toggle as={Card.Header} eventKey="4"><span style={{fontWeight: 700}}>Redundancy (D):</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="4">
+                  <Card.Body>{this.state.D}</Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+
+              <Card>
+                <Accordion.Toggle as={Card.Header} eventKey="5"><span style={{fontWeight: 700}}>Information Amount (C):</span></Accordion.Toggle>
+                <Accordion.Collapse eventKey="5">
+                  <Card.Body>
+                    <ListGroup>
+                      {this._renderInfoAmount(this.state.informationAmount)}
+                    </ListGroup>
+                  </Card.Body>
+                </Accordion.Collapse>
+              </Card>
+
+            </Accordion>
+
+            {this.state.success &&
+              <Alert onClose={() => this.setState({success: false})} dismissible variant={'success'}>
+                Success, check the information above.
+              </Alert>
+            }
             
             </Col>
 
           </Row>
 
-          <Row style={{position: "absolute", bottom: 20, left: "5%" }}>
+          {/* <Row style={{position: "absolute", bottom: 20, left: "5%" }}>
             <Col><p style={{color: "gray"}}>Iván Reyes A. - CINVESTAV GDL 2020</p></Col>
-          </Row>
+          </Row> */}
 
         </Container>
 
