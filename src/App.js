@@ -73,9 +73,8 @@ class App extends Component {
 
     frequency.forEach((char) => {
       const probability = char[1]/n
-      const value = probability/huffmanCodes.get(char[0]).length
+      const value = probability*huffmanCodes.get(char[0]).length
       entropy += value
-      console.log("VALUE: ", char[0], probability, value)
     })
 
     return entropy
@@ -87,7 +86,7 @@ class App extends Component {
     let codedText = encode(text, huffmanCodes)
     let frequency = getFrequency(text)
     
-    let entropyUncoded = getEntropyOfText(codedText)
+    let entropyUncoded = getEntropyOfText(text)
     let entropyHuffman = this.getEntropy(text, huffmanCodes, frequency)
     console.log("Entropy 1: ", entropyUncoded)
     console.log("Entropy 2: ", entropyHuffman)
@@ -225,7 +224,7 @@ class App extends Component {
 
               <Accordion style={{marginBottom: 20}}>
               <Card style={{maxWidth: 540}}>
-                <Accordion.Toggle as={Card.Header} eventKey="000"><span style={{fontWeight: 700}}>Huffman Code:</span></Accordion.Toggle>
+                <Accordion.Toggle as={Card.Header} eventKey="000"><span style={{fontWeight: 700}}>Huffman Code ({this.state.codedText.length}):</span></Accordion.Toggle>
                 <Accordion.Collapse eventKey="000">
                   <Card.Body>
                     <Card.Text >
@@ -247,7 +246,7 @@ class App extends Component {
               </Card>
 
               <Card>
-                <Accordion.Toggle as={Card.Header} eventKey="0"><span style={{fontWeight: 700}}>Entropy (H):</span></Accordion.Toggle>
+                <Accordion.Toggle as={Card.Header} eventKey="0"><span style={{fontWeight: 700}}>Aproximated Entropy (H):</span></Accordion.Toggle>
                 <Accordion.Collapse eventKey="0">
                   <Card.Body>{this.state.entropyUncoded}</Card.Body>
                 </Accordion.Collapse>
